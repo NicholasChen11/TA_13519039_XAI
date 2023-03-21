@@ -1,3 +1,26 @@
+import csv
+
+def readCSV(filename):
+  X = []
+  y = []
+
+  with open(f"./data/{filename}", 'r') as file:
+    csvreader = csv.reader(file)
+    for i, row in enumerate(csvreader):
+      if i != 0: # Skip Column Names
+        X = X + [convertStrListToNumList(row[:-1])]
+        y = y + [row[-1]]
+
+  return (X, y)
+
+def convertStrListToNumList(list):
+  newList = [0 for _ in range(len(list))]
+
+  for i in range(len(list)):
+    newList[i] = eval(list[i])
+  
+  return newList
+
 def most_frequent(List):
   return max(set(List), key = List.count)
 
