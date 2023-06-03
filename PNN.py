@@ -64,6 +64,41 @@ class PNN():
       result[i] = min(target_distance, key=target_distance.get)
     
     return numpy.array(result)
+  
+  def predict_proba(self, X_test):
+    n_tests = len(X_test)
+    class_types = list(set(self.y))
+    class_types.sort()
+    result = [[0 for _ in range(len(class_types))] for _ in range(n_tests)]
+    
+    for i in range(n_tests):
+      curr_test = X_test[i]
+      target_distance = {}
+      total_p = 0
+      
+      # Calculating distance in each data's label
+      # format target_distance: {
+      #   "label_1" : weightedSum_1
+      #   "label_2" : weightedSum_2
+      # } 
+      for target in self.train.keys():
+        KNeighbors = self.findKNeighbors(curr_test, target)
+        target_distance[target] = weightedSum(KNeighbors)
+
+      # format result: [[ False_value, True_value ]]
+      # Calculation Process
+      #   for each class (i), calculate:
+      #   p[i] (stand for: probability) = 1 / target_distance[i]
+      #   total_p = total all probability
+      #   result[i] = p[i] / total_p
+      for classIdx in range(len(class_types)):
+        result[i][classIdx] = 1 / target_distance[class_types[classIdx]]
+        total_p += result[i][classIdx]
+
+      for classIdx in range(len(result[i])):
+        result[i][classIdx] = result[i][classIdx] / total_p
+    
+    return numpy.array(result)
       
   def findKNeighbors(self, currTest, target):
     """Get list of indices of k smallest distance from currTest to every point in self.train['target']

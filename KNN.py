@@ -39,6 +39,23 @@ class KNN():
       result[i] = most_frequent(y_KNeighbors)
     
     return numpy.array(result)
+
+  def predict_proba(self, X_test):
+    # format result: [[ False_value, True_value ]]
+    n_tests = len(X_test)
+    class_types = list(set(self.y))
+    class_types.sort()
+    result = [[0 for _ in range(len(class_types))] for _ in range(n_tests)]
+    
+    for i in range(n_tests):
+      currTest = X_test[i]
+      KNeighbors = self.findKNeighbors(currTest)
+      y_KNeighbors = list(map(lambda idx : self.y[idx], KNeighbors))
+      for j in range(len(y_KNeighbors)):
+        class_idx = class_types.index(y_KNeighbors[j])
+        result[i][class_idx] += 1 / len(y_KNeighbors)
+
+    return numpy.array(result)
       
   def findKNeighbors(self, currTest):
     """Get list of indices of k smallest distance from currTest to every point in self.X

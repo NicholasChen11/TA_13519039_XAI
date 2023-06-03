@@ -96,11 +96,17 @@ class MVMCNN():
             curr_test = X_test[i]
             localKNeighbors = {}
             target_distance = {}
-      
+
             # Calculating distance in each data's label
             # target_distance = {
-            #   "label_1" : weightedSum_1
-            #   "label_2" : weightedSum_2
+            #   "label_1" : {
+            #       "cluster_1": weightedSum_1,
+            #       "cluster_2": weightedSum_2,
+            #   }
+            #   "label_2" : {
+            #       "cluster_1": weightedSum_3,
+            #       "cluster_2": weightedSum_4,
+            #   }
             # }
             for target in self.train.keys():
                 localKNeighbors[target] = {}
@@ -109,7 +115,7 @@ class MVMCNN():
                     KNeighbors = self.findKNeighbors(curr_test, target, cluster)
                     localKNeighbors[target][cluster] = self.getLocalKNeighbors(KNeighbors, target, cluster)
                     target_distance[target][cluster] = self.getTargetDistance(localKNeighbors[target][cluster], curr_test)
-            
+
             # search most minimum distance
             firstKey = list(target_distance.keys())[0]
             minDistance = target_distance[firstKey][0]
@@ -122,7 +128,60 @@ class MVMCNN():
 
             result[i] = minKey
             # result[i] = min(target_distance, key=target_distance.get)
-            
+
+        return numpy.array(result)
+
+    def predict_proba(self, X_test):
+        n_tests = len(X_test)
+        class_types = list(set(self.y))
+        class_types.sort()
+        result = [[0 for _ in range(len(class_types))] for _ in range(n_tests)]
+        
+        for i in range(n_tests):
+            curr_test = X_test[i]
+            localKNeighbors = {}
+            target_distance = {}
+            total_p = 0
+
+            # Calculating distance in each data's label
+            # target_distance = {
+            #   "label_1" : {
+            #       "cluster_1": weightedSum_1,
+            #       "cluster_2": weightedSum_2,
+            #   }
+            #   "label_2" : {
+            #       "cluster_1": weightedSum_3,
+            #       "cluster_2": weightedSum_4,
+            #   }
+            # }
+            for target in self.train.keys():
+                localKNeighbors[target] = {}
+                target_distance[target] = {}
+                for cluster in self.train[target]:
+                    KNeighbors = self.findKNeighbors(curr_test, target, cluster)
+                    localKNeighbors[target][cluster] = self.getLocalKNeighbors(KNeighbors, target, cluster)
+                    target_distance[target][cluster] = self.getTargetDistance(localKNeighbors[target][cluster], curr_test)
+
+            # search most minimum distance for each class
+            # format result: [[ False_value, True_value ]]
+            # Calculation Process
+            #   for each class (class_idx) in every data (i), calculate:
+            #   p[i][class_idx] (stand for: probability) = 1 / target_distance[class_idx]
+            #   total_p[i] = total all probability in data 'i'
+            #   result[i][class_idx] = p[i][class_idx] / total_p[i]
+            for classIdx in range(len(class_types)):
+                target = class_types[classIdx]
+                minDistance = target_distance[target][0]
+                for cluster in self.train[target]:
+                    if minDistance > target_distance[target][cluster]:
+                        minDistance = target_distance[target][cluster]
+
+                result[i][classIdx] = 1 / minDistance
+                total_p += result[i][classIdx]
+
+            for classIdx in range(len(result[i])):
+                result[i][classIdx] = result[i][classIdx] / total_p
+
         return numpy.array(result)
         
     def findKNeighbors(self, currTest, target, cluster):
